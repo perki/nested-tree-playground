@@ -1,0 +1,16 @@
+{
+  "name": "nested-tree-playground",
+  "version": "1.0.0",
+  "description": "Playground for Nested Tree Algo",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Nested",
+    "Tree",
+    "Algorythm"
+  ],
+  "author": "Perki",
+  "license": "BSD-3-Clause"
+}
