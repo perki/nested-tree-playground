@@ -36,10 +36,14 @@ function startReadline () {
       try {
         console.log('Execute: ' + command.title);
         const res = await command.func(...args);
-        console.log(res);
+        if (res != null) console.log(res);
       } catch (e) {
-        console.log(e);
-        console.log(getCommandLine(command));
+        if (e.showOnlyMessage) {
+          console.log('Error:' + e.message);
+          console.log(getCommandLine(command));
+        } else {
+          console.log(e);
+        }
       }
     }
     startReadline(); // Calling this function again to ask new question

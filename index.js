@@ -20,14 +20,16 @@ registerCmd('Add a node', '<name> [parent]', '+', async (name, parentName = 'roo
   return res;
 });
 
-registerCmd('Remove a node', '<name>', '-', async (name, parentName = 'root') => {
+registerCmd('Remove a node', '<name>', '-', async (name) => {
   const res = removeNode(name);
   showTree(true);
   return res;
 });
 
-registerCmd('Move a node', '<name> <destination>', 'm', async (name, destination) => {
-  const res = moveNode(name, destination);
+registerCmd('Move a node', '<name> <destination>', 'm', async (name, destinationName) => {
+  const node = nodeByName(name, 'name');
+  const destination = nodeByName(destinationName, 'destination');
+  const res = moveNode(node, destination);
   showTree(true);
   return res;
 });
@@ -53,12 +55,36 @@ registerCmd('Load base tree', '', 'b', async function quit () {
   return 'Base tree loaded';
 });
 
+registerCmd('Random moves', '[moves = 100]', 'r', async (nMoves = 100) => {
+  if (tree.length === 1) throwMessage('Tree is empty');
+  let i = 0;
+  while (i < nMoves) {
+    const node = tree[Math.floor(Math.random() * tree.length)];
+    const dest = tree[Math.floor(Math.random() * tree.length)];
+    if (_isDescendent(dest, node) || (dest === node)) continue; // retry;
+    i++;
+    moveNode(node, dest);
+    const isValid = isValidNestedSet();
+    if (isValid !== 'Tree is valid') {
+      console.log(`** Stopped after ${i}/${nMoves} random moves`);
+      throwMessage(isValid.join('\n'));
+    }
+  }
+  return `Executed ${i}/${nMoves} random moves`;
+});
+
 startReadline();
 
+function throwMessage (message) {
+  const error = new Error(message);
+  error.showOnlyMessage = true;
+  throw error;
+}
+
 /**
- * Check is a node is a child
+ * Check is a node is a decendent
  */
-function _isChild (node, potentialParent) {
+function _isDescendent (node, potentialParent) {
   return (node.left > potentialParent.left && node.right < potentialParent.right);
 }
 
@@ -116,32 +142,32 @@ function opLearn (key, up, isChild) {
   ops[d][key]++;
 }
 
+function nodeByName (name, key) {
+  if (name == null) throwMessage(`${key} is missing`);
+  const node = tree.find((n) => n.name === name);
+  if (node == null) throwMessage(`${key} => node "${name}" does not exists`);
+  return node;
+}
+
 /**
  * Move a node
  */
-function moveNode (name, destinationName) {
-  if (name == null) return 'Error: name missing, usage: <name> <destination>';
-  if (destinationName == null) return 'Error: parent-name missing, usage: <name> <destination>';
-  const node = tree.find((n) => n.name === name);
-  if (node == null) return `Error: node with name "${name}" does not exists`;
-  const destination = tree.find((n) => n.name === destinationName);
-  if (destination == null) return `Error: node with name "${destinationName}" does not exists`;
-
+function moveNode (node, destination) {
+  console.log(`**** Move ${node.name} ${destination.name}`);
   // check if destination is descendent of node
-  if (_isChild(destination, node)) {
-    return `Error: "${destinationName}" is a descendant of ${name}`;
-  }
+  if (_isDescendent(destination, node)) throwMessage(`"${destination.name}" is a descendant of ${name}`);
+  if (destination === node) throwMessage('Destination is identical to node');
 
   const leftOfMovingNode = node.left;
   const rightOfMovingNode = node.right;
   const sizeOfMovingNode = rightOfMovingNode - leftOfMovingNode + 1;
   const rightOfDestinationNode = destination.right;
   const leftOfDestinationNode = destination.left;
-  const isChild = _isChild(node, destination);
+  const isChild = _isDescendent(node, destination);
   const up = (leftOfDestinationNode < leftOfMovingNode && !isChild) ? 1 : -1;
 
   // set parent to future parent
-  node.parent = destinationName;
+  node.parent = destination.name;
 
   // hide the node by setting negative values
   for (const n of tree) {
@@ -195,7 +221,7 @@ function moveNode (name, destinationName) {
 
   tree.sort((a, b) => a.left - b.left);
   console.log(ops);
-  return `Moved ${name} to ${destinationName}`;
+  return `Moved ${node.name} to ${destination.name}`;
 }
 
 /**
