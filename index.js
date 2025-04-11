@@ -1,4 +1,4 @@
-const readline = require('node:readline');
+const { registerCmd, startReadline } = require('./myReadline');
 
 start();
 
@@ -11,28 +11,26 @@ const baseTree = [
 ];
 
 async function start () {
-  const commands = { };
-  const commandsDesc = [];
-
+ 
   // --------------- commands --------------- //
 
-  register('List', ['l'], async () => {
+  registerCmd('List', ['l'], async () => {
     console.log(tree);
   });
 
-  register('Add a node <name> [parent]', ['+'], async (name, parentName = 'root') => {
+  registerCmd('Add a node <name> [parent]', ['+'], async (name, parentName = 'root') => {
     return addNode(name, parentName);
   });
 
-  register('Remove a node', ['-'], async (name, parentName = 'root') => {
+  registerCmd('Remove a node', ['-'], async (name, parentName = 'root') => {
     return removeNode(name);
   });
 
-  register('Move a node', ['m'], async (name, destination) => {
+  registerCmd('Move a node', ['m'], async (name, destination) => {
     return moveNode(name, destination);
   });
 
-  register('Load base tree', ['b'], async function quit () {
+  registerCmd('Load base tree', ['b'], async function quit () {
     for (const a of baseTree) {
       const res = addNode(a[0], a[1]);
       if (res.startsWith('Error')) console.log(res);
@@ -40,54 +38,11 @@ async function start () {
     return 'Base tree loaded';
   });
 
-  register('Quit', ['q'], async function quit () {
+  registerCmd('Quit', ['q'], async function quit () {
     process.exit(0);
   });
 
-  // -- readLine
-
-  function register (title, keys, func) {
-    commandsDesc.push({ title, keys });
-    for (const key of keys) {
-      if (commands[key] != null) throw Error(`Tried to register twice command: ${key}`);
-      commands[key] = func;
-    }
-  }
-
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-
-  function recursiveAsyncReadLine () {
-    rl.question('\nCommand: ', async function (cmd) {
-      const cmds = cmd.split(' ');
-      const key = cmds[0];
-      const args = cmds.slice(1);
-      if (commands[key] == null) {
-        console.log('*** No existing command: "' + key + '"');
-        showUsage();
-      } else {
-        try {
-          const res = await commands[key](...args);
-          console.log(res);
-          showTree(true)
-        } catch (e) {
-          console.log(e);
-        }
-      }
-      recursiveAsyncReadLine(); // Calling this function again to ask new question
-    });
-  }
-
-  function showUsage () {
-    for (const com of commandsDesc) {
-      console.log(`- ${com.keys.join(', ')} \t ${com.title}`);
-    }
-  }
-
-  showUsage();
-  recursiveAsyncReadLine();
+  startReadline(function () {  showTree(true); });
 }
 
 /**
@@ -137,18 +92,18 @@ function moveNode (name, destinationName) {
     if (n.right > rightOfMovingNode) n.right -= sizeOfMovingNode;
   } 
 
-  console.log('***** - Gap Closed')
-  tree.sort((a, b) => a.left - b.left);
-  showTree()
+  // console.log('***** - Gap Closed')
+  // tree.sort((a, b) => a.left - b.left);
+  // showTree()
 
   // make room 
   for (const n of tree) {
     if (n.left >= rightOfDestinationNode) n.left += sizeOfMovingNode;
     if (n.right >= rightOfDestinationNode) n.right += sizeOfMovingNode;
   } 
-  console.log('***** - Room made', { rightOfDestinationNode, sizeOfMovingNode });
-  tree.sort((a, b) => a.left - b.left);
-  showTree()
+  // console.log('***** - Room made', { rightOfDestinationNode, sizeOfMovingNode });
+  // tree.sort((a, b) => a.left - b.left);
+  // showTree()
 
   // shift node
   const deltaDepth = destination.depth - node.depth + 1;
@@ -158,7 +113,7 @@ function moveNode (name, destinationName) {
       n.left = shift - n.left;
       n.right = shift - n.right;
       n.depth += deltaDepth;
-      console.log('shift', n, { shift, deltaDepth });
+      // console.log('shift', n, { shift, deltaDepth });
     }
   } 
 
