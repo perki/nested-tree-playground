@@ -66,7 +66,7 @@ function _isChild (node, potentialParent) {
  * Get children
  */
 function getChildren (name, maxDepth = 0) {
-  if (name == null) return 'Error: name missing, usage: <name>';
+  if (name == null) return 'Error: name missing, usage: <name> [max Depth]';
   const node = tree.find((n) => n.name === name);
   if (node == null) return `Error: node with name "${name}" does not exists`;
 
@@ -108,6 +108,14 @@ function showTree (checkIsValid) {
   }
 }
 
+const ops = {};
+function opLearn (key, up, isChild) {
+  const d = up + ':' + isChild;
+  if (ops[d] == null) ops[d] = {};
+  if (ops[d][key] == null) ops[d][key] = 0;
+  ops[d][key]++;
+}
+
 /**
  * Move a node
  */
@@ -145,17 +153,25 @@ function moveNode (name, destinationName) {
 
   // move block
   for (const n of tree) {
+    // 'rm < left < rd --> left down'
     if (n.left > rightOfMovingNode && n.left < rightOfDestinationNode) {
       change(n, 'left', n.left - sizeOfMovingNode);
+      opLearn('rm < left < rd --> left down', up, isChild);
     }
+    // 'rm < right < rd --> right down'
     if (n.right > rightOfMovingNode && n.right < rightOfDestinationNode) {
       change(n, 'right', n.right - sizeOfMovingNode);
+      opLearn('rm < right < rd --> right down', up, isChild);
     }
+    // 'rm < left && rd <= left --> left up'
     if (n.left < rightOfMovingNode && n.left >= rightOfDestinationNode) {
       change(n, 'left', n.left + sizeOfMovingNode);
+      opLearn('rm < left && rd <= left --> left up', up, isChild);
     }
+    // 'rm < right && ed <= right --> right up'
     if (n.right < rightOfMovingNode && n.right >= rightOfDestinationNode) {
       change(n, 'right', n.right + sizeOfMovingNode);
+      opLearn('rm < right && ed <= right --> right up', up, isChild);
     }
   }
 
@@ -178,6 +194,7 @@ function moveNode (name, destinationName) {
   }
 
   tree.sort((a, b) => a.left - b.left);
+  console.log(ops);
   return `Moved ${name} to ${destinationName}`;
 }
 
