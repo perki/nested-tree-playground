@@ -1,7 +1,5 @@
 const { registerCmd, startReadline } = require('./utils/myReadline');
 
-const throwMessage = require('./utils/throwMessage');
-
 const baseTree = [
   ['a'], ['aa', 'a'], ['aaa', 'aa'], ['aaaa', 'aaa'], ['ab', 'a'], ['ac', 'a'],
   ['b'], ['ba', 'b'], ['bbb', 'ba'], ['bbbb', 'bbb'], ['bb', 'b'], ['bc', 'b'],
