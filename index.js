@@ -102,7 +102,9 @@ function getParents (name) {
 function showTree(checkIsValid) {
   for (const n of tree) {
     const spacing = '                      '.substring(0,n.depth * 2);
-    console.log(spacing + n.name + ' l:' + n.left + ' r:' + n.right, '\t p:' + n.parent);
+    const changes = n.changes ? n.changes.map((c) => `${c[0]} ${c[1]}=>${c[2]}`).join(', '): '';
+    console.log(spacing + n.name + ' l:' + n.left + ' r:' + n.right, '\tp:' + n.parent + '\t' + changes);
+    n.changes = [];
   }
   if (checkIsValid) {
     console.log(isValidNestedSet())
@@ -131,6 +133,7 @@ function moveNode (name, destinationName) {
   const rightOfMovingNode = node.right;
   const sizeOfMovingNode = rightOfMovingNode - leftOfMovingNode + 1;
   const rightOfDestinationNode = destination.right;
+  const leftOfDestinationNode = destination.left;
 
   // set parent to future parent
   node.parent = destinationName;
@@ -138,38 +141,52 @@ function moveNode (name, destinationName) {
   // hide the node by setting negative values
   for (const n of tree) {
     if (n.left >= leftOfMovingNode && n.right <= rightOfMovingNode) {
-      n.left = -n.left;
-      n.right = -n.right;
+      change(n, 'left', -n.left);
+      change(n, 'right', -n.right);
     }
   } 
 
-  // close the gap 
-  for (const n of tree) {
-    if (n.left > rightOfMovingNode) n.left -= sizeOfMovingNode;
-    if (n.right > rightOfMovingNode) n.right -= sizeOfMovingNode;
-  } 
+  // move down or up
+  const up = (leftOfDestinationNode < leftOfMovingNode) ? 1 : -1;
+  console.log('*** up:', {up, leftOfDestinationNode, leftOfMovingNode});
 
-  // console.log('***** - Gap Closed')
-  // tree.sort((a, b) => a.left - b.left);
-  // showTree()
+  // shift down block 
+  if (up < 1) {
+    for (const n of tree) {
+      if (n.left > rightOfMovingNode && n.left < rightOfDestinationNode) {
+        change(n, 'left', n.left - sizeOfMovingNode);
+      }
+      if (n.right > rightOfMovingNode && n.right < rightOfDestinationNode) {
+        change(n, 'right', n.right - sizeOfMovingNode);
+      }
+    }
+    console.log('***** - Shift down')
+  } else {
+    for (const n of tree) {
+      if (n.left < rightOfMovingNode && n.left >= rightOfDestinationNode) {
+        change(n, 'left', n.left + sizeOfMovingNode);
+      }
+      if (n.right < rightOfMovingNode && n.right >= rightOfDestinationNode) {
+        change(n, 'right', n.right + sizeOfMovingNode);
+      }
+    }
+    console.log('***** - Shift up')
+  }
 
-  // make room 
-  for (const n of tree) {
-    if (n.left >= rightOfDestinationNode) n.left += sizeOfMovingNode;
-    if (n.right >= rightOfDestinationNode) n.right += sizeOfMovingNode;
-  } 
-  // console.log('***** - Room made', { rightOfDestinationNode, sizeOfMovingNode });
-  // tree.sort((a, b) => a.left - b.left);
-  // showTree()
+  tree.sort((a, b) => a.left - b.left);
+  showTree()
+
+  // No delta shift as node already moved when down
+  const deltaShift = (up < 1) ? -sizeOfMovingNode : 0
 
   // shift node
   const deltaDepth = destination.depth - node.depth + 1;
-  const shift = rightOfDestinationNode - leftOfMovingNode;
+  const shift = rightOfDestinationNode - leftOfMovingNode + deltaShift;
   for (const n of tree) {
     if (n.left < 0) {
-      n.left = shift - n.left;
-      n.right = shift - n.right;
-      n.depth += deltaDepth;
+      change(n, 'left', shift - n.left);
+      change(n, 'right', shift - n.right);
+      change(n, 'depth', deltaDepth + n.depth);
       // console.log('shift', n, { shift, deltaDepth });
     }
   } 
@@ -271,4 +288,10 @@ function isValidNestedSet() {
   }
 
   return errors.length ? errors : 'Tree is valid';
+}
+
+function change (node, key, value) {
+  if (!node.changes) node.changes = [];
+  node.changes.push([key, node[key], value]);
+  node[key] = value;
 }
