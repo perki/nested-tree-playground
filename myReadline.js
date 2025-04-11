@@ -6,7 +6,7 @@ const commandsDesc = [];
 module.exports = {
   registerCmd,
   startReadline
-}
+};
 
 // -- readLine
 

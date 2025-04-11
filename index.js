@@ -1,11 +1,11 @@
 const { registerCmd, startReadline } = require('./myReadline');
 
-const tree = [{left: 1, right: 2, depth: 0, name: 'root', parent: null}];
+const tree = [{ left: 1, right: 2, depth: 0, name: 'root', parent: null }];
 
 const baseTree = [
-  ['a'],['aa','a'],['aaa', 'aa'], ['aaaa','aaa'], ['ab', 'a'],['ac','a'],
-  ['b'],['ba','b'],['bbb', 'ba'], ['bbbb','bbb'], ['bb', 'b'],['bc','b'],
-  ['c'],['cc','c'],['cb', 'c']
+  ['a'], ['aa', 'a'], ['aaa', 'aa'], ['aaaa', 'aaa'], ['ab', 'a'], ['ac', 'a'],
+  ['b'], ['ba', 'b'], ['bbb', 'ba'], ['bbbb', 'bbb'], ['bb', 'b'], ['bc', 'b'],
+  ['c'], ['cc', 'c'], ['cb', 'c']
 ];
 
 // --------------- commands --------------- //
@@ -55,7 +55,6 @@ registerCmd('Load base tree', ['b'], async function quit () {
 
 startReadline();
 
-
 /**
  * Check is a node is a child
  */
@@ -66,12 +65,12 @@ function _isChild (node, potentialParent) {
 /**
  * Get children
  */
-function getChildren (name, maxDepth =  0) {
+function getChildren (name, maxDepth = 0) {
   if (name == null) return 'Error: name missing, usage: <name>';
   const node = tree.find((n) => n.name === name);
   if (node == null) return `Error: node with name "${name}" does not exists`;
 
-  const realMaxDepth = maxDepth > 0 || Infinity; 
+  const realMaxDepth = maxDepth > 0 || Infinity;
 
   const baseDepth = node.depth;
 
@@ -81,8 +80,6 @@ function getChildren (name, maxDepth =  0) {
     n.depth <= baseDepth + realMaxDepth
   ).map((n) => n.name);
 }
-
-
 
 /**
  * Get parents
@@ -99,18 +96,17 @@ function getParents (name) {
 /**
  * Display tree
  */
-function showTree(checkIsValid) {
+function showTree (checkIsValid) {
   for (const n of tree) {
-    const spacing = '                      '.substring(0,n.depth * 2);
-    const changes = n.changes ? n.changes.map((c) => `${c[0]} ${c[1]}=>${c[2]}`).join(', '): '';
+    const spacing = '                      '.substring(0, n.depth * 2);
+    const changes = n.changes ? n.changes.map((c) => `${c[0]} ${c[1]}=>${c[2]}`).join(', ') : '';
     console.log(spacing + n.name + ' l:' + n.left + ' r:' + n.right, '\tp:' + n.parent + '\t' + changes);
     n.changes = [];
   }
   if (checkIsValid) {
-    console.log(isValidNestedSet())
+    console.log(isValidNestedSet());
   }
 }
-
 
 /**
  * Move a node
@@ -123,17 +119,18 @@ function moveNode (name, destinationName) {
   const destination = tree.find((n) => n.name === destinationName);
   if (destination == null) return `Error: node with name "${destinationName}" does not exists`;
 
-  // check if destination is children of node
+  // check if destination is descendent of node
   if (_isChild(destination, node)) {
-    return `Error: "${destinationName}" is a child of ${name}`;
+    return `Error: "${destinationName}" is a descendant of ${name}`;
   }
-
 
   const leftOfMovingNode = node.left;
   const rightOfMovingNode = node.right;
   const sizeOfMovingNode = rightOfMovingNode - leftOfMovingNode + 1;
   const rightOfDestinationNode = destination.right;
   const leftOfDestinationNode = destination.left;
+  const isChild = _isChild(node, destination);
+  const up = (leftOfDestinationNode < leftOfMovingNode && !isChild) ? 1 : -1;
 
   // set parent to future parent
   node.parent = destinationName;
@@ -144,40 +141,29 @@ function moveNode (name, destinationName) {
       change(n, 'left', -n.left);
       change(n, 'right', -n.right);
     }
-  } 
+  }
 
-  // move down or up
-  const up = (leftOfDestinationNode < leftOfMovingNode) ? 1 : -1;
-  console.log('*** up:', {up, leftOfDestinationNode, leftOfMovingNode});
-
-  // shift down block 
-  if (up < 1) {
-    for (const n of tree) {
-      if (n.left > rightOfMovingNode && n.left < rightOfDestinationNode) {
-        change(n, 'left', n.left - sizeOfMovingNode);
-      }
-      if (n.right > rightOfMovingNode && n.right < rightOfDestinationNode) {
-        change(n, 'right', n.right - sizeOfMovingNode);
-      }
+  // move block
+  for (const n of tree) {
+    if (n.left > rightOfMovingNode && n.left < rightOfDestinationNode) {
+      change(n, 'left', n.left - sizeOfMovingNode);
     }
-    console.log('***** - Shift down')
-  } else {
-    for (const n of tree) {
-      if (n.left < rightOfMovingNode && n.left >= rightOfDestinationNode) {
-        change(n, 'left', n.left + sizeOfMovingNode);
-      }
-      if (n.right < rightOfMovingNode && n.right >= rightOfDestinationNode) {
-        change(n, 'right', n.right + sizeOfMovingNode);
-      }
+    if (n.right > rightOfMovingNode && n.right < rightOfDestinationNode) {
+      change(n, 'right', n.right - sizeOfMovingNode);
     }
-    console.log('***** - Shift up')
+    if (n.left < rightOfMovingNode && n.left >= rightOfDestinationNode) {
+      change(n, 'left', n.left + sizeOfMovingNode);
+    }
+    if (n.right < rightOfMovingNode && n.right >= rightOfDestinationNode) {
+      change(n, 'right', n.right + sizeOfMovingNode);
+    }
   }
 
   tree.sort((a, b) => a.left - b.left);
-  showTree()
+  showTree();
 
   // No delta shift as node already moved when down
-  const deltaShift = (up < 1) ? -sizeOfMovingNode : 0
+  const deltaShift = (up < 1) ? -sizeOfMovingNode : 0;
 
   // shift node
   const deltaDepth = destination.depth - node.depth + 1;
@@ -189,10 +175,10 @@ function moveNode (name, destinationName) {
       change(n, 'depth', deltaDepth + n.depth);
       // console.log('shift', n, { shift, deltaDepth });
     }
-  } 
+  }
 
   tree.sort((a, b) => a.left - b.left);
-  return `Moved ${name} to ${destinationName}`
+  return `Moved ${name} to ${destinationName}`;
 }
 
 /**
@@ -219,13 +205,13 @@ function removeNode (name) {
   for (const n of tree) {
     if (n.left > node.right) n.left -= width;
     if (n.right > node.right) n.right -= width;
-  } 
-  return `Removed ${name}`
+  }
+  return `Removed ${name}`;
 }
 
 /**
  * Add a node
- * @param {string} name 
+ * @param {string} name
  * @param {string} [parentName] - default "root"
  * @returns {string} message
  */
@@ -235,22 +221,21 @@ function addNode (name, parentName = 'root') {
   if (existing) return `Error: node with name "${name}" already exists`;
   const parent = tree.find((n) => n.name === parentName);
   if (!parent) return `Error: cannot find parent with name "${parentName}"`;
-  
+
   const parentCopy = structuredClone(parent);
   // update tree left and right
   for (const n of tree) {
     if (n.right >= parentCopy.right) n.right += 2;
     if (n.left > parentCopy.right) n.left += 2;
   }
-  const node = {left: parentCopy.right, right: parentCopy.right + 1, depth: parent.depth + 1, name, parent: parentName};
+  const node = { left: parentCopy.right, right: parentCopy.right + 1, depth: parent.depth + 1, name, parent: parentName };
   tree.push(node);
   // sort tree
   tree.sort((a, b) => a.left - b.left);
   return 'Added ' + name;
 }
 
-
-function isValidNestedSet() {
+function isValidNestedSet () {
   const errors = [];
 
   // 1. Check that left < right for all nodes
@@ -264,7 +249,7 @@ function isValidNestedSet() {
   const allBounds = tree.flatMap(node => [node.left, node.right]);
   const uniqueBounds = new Set(allBounds);
   if (uniqueBounds.size !== allBounds.length) {
-    errors.push("Left/right values are not unique");
+    errors.push('Left/right values are not unique');
   }
 
   // 3. Check containment: each child must be fully nested in its parent
