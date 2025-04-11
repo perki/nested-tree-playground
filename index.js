@@ -10,7 +10,7 @@ const baseTree = [
 
 // --------------- commands --------------- //
 
-registerCmd('Show tree','', 's', async () => {
+registerCmd('Show tree', '', 's', async () => {
   showTree();
 });
 
@@ -92,9 +92,8 @@ function _isDescendent (node, potentialParent) {
  * Get children
  */
 function getChildren (name, maxDepth = 0) {
-  if (name == null) return 'Error: name missing, usage: <name> [max Depth]';
-  const node = tree.find((n) => n.name === name);
-  if (node == null) return `Error: node with name "${name}" does not exists`;
+  if (name == null) throwMessage('name missing');
+  const node = nodeByName(name, 'name');
 
   const realMaxDepth = maxDepth > 0 || Infinity;
 
@@ -111,16 +110,14 @@ function getChildren (name, maxDepth = 0) {
  * Get parents
  */
 function getParents (name) {
-  if (name == null) return 'Error: name missing, usage: <name>';
-  const node = tree.find((n) => n.name === name);
-  if (node == null) return `Error: node with name "${name}" does not exists`;
+  const node = nodeByName(name, 'name');
   return tree.filter(n =>
     n.left < node.left && n.right > node.right
   ).map((n) => n.name);
 }
 
 /**
- * Display tree
+ * Display tree and last changes
  */
 function showTree (checkIsValid) {
   for (const n of tree) {
@@ -134,14 +131,12 @@ function showTree (checkIsValid) {
   }
 }
 
-const ops = {};
-function opLearn (key, up, isChild) {
-  const d = up + ':' + isChild;
-  if (ops[d] == null) ops[d] = {};
-  if (ops[d][key] == null) ops[d][key] = 0;
-  ops[d][key]++;
-}
-
+/**
+ * Get a node by its name
+ * @param {string} name 
+ * @param {string} key - the key to display in case of error.
+ * @returns {}
+ */
 function nodeByName (name, key) {
   if (name == null) throwMessage(`${key} is missing`);
   const node = tree.find((n) => n.name === name);
@@ -155,7 +150,7 @@ function nodeByName (name, key) {
 function moveNode (node, destination) {
   console.log(`**** Move ${node.name} ${destination.name}`);
   // check if destination is descendent of node
-  if (_isDescendent(destination, node)) throwMessage(`"${destination.name}" is a descendant of ${name}`);
+  if (_isDescendent(destination, node)) throwMessage(`"${destination.name}" is a descendant of ${node.name}`);
   if (destination === node) throwMessage('Destination is identical to node');
 
   const leftOfMovingNode = node.left;
@@ -163,8 +158,8 @@ function moveNode (node, destination) {
   const sizeOfMovingNode = rightOfMovingNode - leftOfMovingNode + 1;
   const rightOfDestinationNode = destination.right;
   const leftOfDestinationNode = destination.left;
-  const isChild = _isDescendent(node, destination);
-  const up = (leftOfDestinationNode < leftOfMovingNode && !isChild) ? 1 : -1;
+  // Upper in the chain & not a child
+  const up = (leftOfDestinationNode < leftOfMovingNode && rightOfMovingNode > rightOfDestinationNode) ? 1 : -1;
 
   // set parent to future parent
   node.parent = destination.name;
@@ -179,25 +174,22 @@ function moveNode (node, destination) {
 
   // move block
   for (const n of tree) {
-    // 'rm < left < rd --> left down'
-    if (n.left > rightOfMovingNode && n.left < rightOfDestinationNode) {
-      change(n, 'left', n.left - sizeOfMovingNode);
-      opLearn('rm < left < rd --> left down', up, isChild);
-    }
-    // 'rm < right < rd --> right down'
-    if (n.right > rightOfMovingNode && n.right < rightOfDestinationNode) {
-      change(n, 'right', n.right - sizeOfMovingNode);
-      opLearn('rm < right < rd --> right down', up, isChild);
-    }
-    // 'rm < left && rd <= left --> left up'
-    if (n.left < rightOfMovingNode && n.left >= rightOfDestinationNode) {
-      change(n, 'left', n.left + sizeOfMovingNode);
-      opLearn('rm < left && rd <= left --> left up', up, isChild);
-    }
-    // 'rm < right && ed <= right --> right up'
-    if (n.right < rightOfMovingNode && n.right >= rightOfDestinationNode) {
-      change(n, 'right', n.right + sizeOfMovingNode);
-      opLearn('rm < right && ed <= right --> right up', up, isChild);
+    if (up < 0) {
+      if (n.left > rightOfMovingNode && n.left < rightOfDestinationNode) {
+        change(n, 'left', n.left - sizeOfMovingNode);
+      }
+      // 'rm < right < rd --> right down'
+      if (n.right > rightOfMovingNode && n.right < rightOfDestinationNode) {
+        change(n, 'right', n.right - sizeOfMovingNode);
+      }
+    } else {
+      if (n.left < rightOfMovingNode && n.left >= rightOfDestinationNode) {
+        change(n, 'left', n.left + sizeOfMovingNode);
+      }
+      // 'rm < right && ed <= right --> right up'
+      if (n.right < rightOfMovingNode && n.right >= rightOfDestinationNode) {
+        change(n, 'right', n.right + sizeOfMovingNode);
+      }
     }
   }
 
@@ -215,12 +207,10 @@ function moveNode (node, destination) {
       change(n, 'left', shift - n.left);
       change(n, 'right', shift - n.right);
       change(n, 'depth', deltaDepth + n.depth);
-      // console.log('shift', n, { shift, deltaDepth });
     }
   }
 
   tree.sort((a, b) => a.left - b.left);
-  console.log(ops);
   return `Moved ${node.name} to ${destination.name}`;
 }
 
@@ -228,9 +218,7 @@ function moveNode (node, destination) {
  * Remove a node
  */
 function removeNode (name) {
-  if (name == null) return 'Error: name missing, usage a <name> [parent Name]';
-  const found = tree.find((n) => n.name === name);
-  if (found == null) return `Error: node with name "${name}" does not exists`;
+  const found = nodeByName(name, 'name');
   const node = structuredClone(found);
   const width = node.right - node.left + 1;
 
@@ -239,15 +227,15 @@ function removeNode (name) {
   while (i < tree.length) {
     const n = tree[i];
     if (n.left >= node.left && n.right <= node.right) {
-      tree.splice(i, 1);
+      tree.splice(i, 1); // remove all child nodes.
     } else {
       i++;
     }
   }
   // decrease left & right
   for (const n of tree) {
-    if (n.left > node.right) n.left -= width;
-    if (n.right > node.right) n.right -= width;
+    if (n.left > node.right) change(n, 'left', n.left - width);
+    if (n.right > node.right) change(n, 'right', n.right - width);
   }
   return `Removed ${name}`;
 }
@@ -259,17 +247,16 @@ function removeNode (name) {
  * @returns {string} message
  */
 function addNode (name, parentName = 'root') {
-  if (name == null) return 'Error: name missing, usage a <name> [parent Name]';
+  if (name == null) throwMessage('name missing');
   const existing = tree.find((n) => n.name === name);
-  if (existing) return `Error: node with name "${name}" already exists`;
-  const parent = tree.find((n) => n.name === parentName);
-  if (!parent) return `Error: cannot find parent with name "${parentName}"`;
+  if (existing) throwMessage(`node with name "${name}" already exists`);
+  const parent = nodeByName(parentName, 'parent-name');
 
   const parentCopy = structuredClone(parent);
   // update tree left and right
   for (const n of tree) {
-    if (n.right >= parentCopy.right) n.right += 2;
-    if (n.left > parentCopy.right) n.left += 2;
+    if (n.right >= parentCopy.right) change(n, 'right', n.right + 2);
+    if (n.left > parentCopy.right) change(n, 'left', n.left + 2);
   }
   const node = { left: parentCopy.right, right: parentCopy.right + 1, depth: parent.depth + 1, name, parent: parentName };
   tree.push(node);
@@ -278,7 +265,10 @@ function addNode (name, parentName = 'root') {
   return 'Added ' + name;
 }
 
-function isValidNestedSet () {
+/**
+ * Check TREE
+ */
+function isValidNestedSet (throwError = false) {
   const errors = [];
 
   // 1. Check that left < right for all nodes
@@ -315,6 +305,15 @@ function isValidNestedSet () {
     errors.push(`Max right value ${maxRight} does not equal 2 * total nodes (${expectedMax})`);
   }
 
+  // 5. Check depth are correct
+  for (const node of tree) {
+    const computedDepth = tree.filter(n =>
+      n.left < node.left && n.right > node.right
+    ).length;
+    if (node.depth !== computedDepth) errors.push(`Node ${node.name} should have a depth of ${computedDepth} no ${node.depth}`);
+  }
+
+  if (throwError && errors.length) throwMessage('Tree not valid \n' + errors.join('\n- '));
   return errors.length ? errors : 'Tree is valid';
 }
 
