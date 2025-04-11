@@ -18,12 +18,16 @@ function registerCmd (title, keys, func) {
   }
 }
 
+registerCmd('Quit', ['q'], async function quit () {
+  process.exit(0);
+});
+
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-function startReadline (callAfterEachCommand) {
+function startReadline () {
   rl.question('\nCommand: ', async function (cmd) {
     const cmds = cmd.split(' ');
     const key = cmds[0];
@@ -35,12 +39,11 @@ function startReadline (callAfterEachCommand) {
       try {
         const res = await commands[key](...args);
         console.log(res);
-        if (callAfterEachCommand) callAfterEachCommand();
       } catch (e) {
         console.log(e);
       }
     }
-    startReadline(callAfterEachCommand); // Calling this function again to ask new question
+    startReadline(); // Calling this function again to ask new question
   });
 }
 

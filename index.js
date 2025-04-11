@@ -1,48 +1,99 @@
 const { registerCmd, startReadline } = require('./myReadline');
 
-start();
-
 const tree = [{left: 1, right: 2, depth: 0, name: 'root', parent: null}];
 
 const baseTree = [
   ['a'],['aa','a'],['aaa', 'aa'], ['aaaa','aaa'], ['ab', 'a'],['ac','a'],
-  ['b'],['ba','b'],['bbb', 'bb'], ['bbbb','bbb'], ['bb', 'b'],['bc','b'],
+  ['b'],['ba','b'],['bbb', 'ba'], ['bbbb','bbb'], ['bb', 'b'],['bc','b'],
   ['c'],['cc','c'],['cb', 'c']
 ];
 
-async function start () {
- 
-  // --------------- commands --------------- //
+// --------------- commands --------------- //
 
-  registerCmd('List', ['l'], async () => {
-    console.log(tree);
-  });
+registerCmd('Show tree', ['s'], async () => {
+  showTree();
+});
 
-  registerCmd('Add a node <name> [parent]', ['+'], async (name, parentName = 'root') => {
-    return addNode(name, parentName);
-  });
+registerCmd('Add a node <name> [parent]', ['+'], async (name, parentName = 'root') => {
+  const res = addNode(name, parentName);
+  showTree(true);
+  return res;
+});
 
-  registerCmd('Remove a node', ['-'], async (name, parentName = 'root') => {
-    return removeNode(name);
-  });
+registerCmd('Remove a node <name>', ['-'], async (name, parentName = 'root') => {
+  const res = removeNode(name);
+  showTree(true);
+  return res;
+});
 
-  registerCmd('Move a node', ['m'], async (name, destination) => {
-    return moveNode(name, destination);
-  });
+registerCmd('Move a node <name> <destination>', ['m'], async (name, destination) => {
+  const res = moveNode(name, destination);
+  showTree(true);
+  return res;
+});
 
-  registerCmd('Load base tree', ['b'], async function quit () {
-    for (const a of baseTree) {
-      const res = addNode(a[0], a[1]);
-      if (res.startsWith('Error')) console.log(res);
-    }
-    return 'Base tree loaded';
-  });
+registerCmd('Get parents <name>', ['p'], async (name) => {
+  const res = getParents(name);
+  if (!Array.isArray(res)) return res;
+  return `Parents of "${name}": ${res.join('/')}`;
+});
 
-  registerCmd('Quit', ['q'], async function quit () {
-    process.exit(0);
-  });
+registerCmd('Get childrens <name> [maxDepth]', ['c'], async (name, maxDepth) => {
+  const res = getChildren(name, maxDepth || 0);
+  if (!Array.isArray(res)) return res;
+  return `Children of "${name}": ${res.join(', ')}`;
+});
 
-  startReadline(function () {  showTree(true); });
+registerCmd('Load base tree', ['b'], async function quit () {
+  for (const a of baseTree) {
+    const res = addNode(a[0], a[1]);
+    if (res.startsWith('Error')) console.log(res);
+  }
+  showTree(true);
+  return 'Base tree loaded';
+});
+
+startReadline();
+
+
+/**
+ * Check is a node is a child
+ */
+function _isChild (node, potentialParent) {
+  return (node.left > potentialParent.left && node.right < potentialParent.right);
+}
+
+/**
+ * Get children
+ */
+function getChildren (name, maxDepth =  0) {
+  if (name == null) return 'Error: name missing, usage: <name>';
+  const node = tree.find((n) => n.name === name);
+  if (node == null) return `Error: node with name "${name}" does not exists`;
+
+  const realMaxDepth = maxDepth > 0 || Infinity; 
+
+  const baseDepth = node.depth;
+
+  return tree.filter(n =>
+    n.left > node.left &&
+    n.right < node.right &&
+    n.depth <= baseDepth + realMaxDepth
+  ).map((n) => n.name);
+}
+
+
+
+/**
+ * Get parents
+ */
+function getParents (name) {
+  if (name == null) return 'Error: name missing, usage: <name>';
+  const node = tree.find((n) => n.name === name);
+  if (node == null) return `Error: node with name "${name}" does not exists`;
+  return tree.filter(n =>
+    n.left < node.left && n.right > node.right
+  ).map((n) => n.name);
 }
 
 /**
@@ -69,6 +120,12 @@ function moveNode (name, destinationName) {
   if (node == null) return `Error: node with name "${name}" does not exists`;
   const destination = tree.find((n) => n.name === destinationName);
   if (destination == null) return `Error: node with name "${destinationName}" does not exists`;
+
+  // check if destination is children of node
+  if (_isChild(destination, node)) {
+    return `Error: "${destinationName}" is a child of ${name}`;
+  }
+
 
   const leftOfMovingNode = node.left;
   const rightOfMovingNode = node.right;
