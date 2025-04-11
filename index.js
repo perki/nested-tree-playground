@@ -10,41 +10,41 @@ const baseTree = [
 
 // --------------- commands --------------- //
 
-registerCmd('Show tree', ['s'], async () => {
+registerCmd('Show tree','', 's', async () => {
   showTree();
 });
 
-registerCmd('Add a node <name> [parent]', ['+'], async (name, parentName = 'root') => {
+registerCmd('Add a node', '<name> [parent]', '+', async (name, parentName = 'root') => {
   const res = addNode(name, parentName);
   showTree(true);
   return res;
 });
 
-registerCmd('Remove a node <name>', ['-'], async (name, parentName = 'root') => {
+registerCmd('Remove a node', '<name>', '-', async (name, parentName = 'root') => {
   const res = removeNode(name);
   showTree(true);
   return res;
 });
 
-registerCmd('Move a node <name> <destination>', ['m'], async (name, destination) => {
+registerCmd('Move a node', '<name> <destination>', 'm', async (name, destination) => {
   const res = moveNode(name, destination);
   showTree(true);
   return res;
 });
 
-registerCmd('Get parents <name>', ['p'], async (name) => {
+registerCmd('Get parents', '<name>', 'p', async (name) => {
   const res = getParents(name);
   if (!Array.isArray(res)) return res;
   return `Parents of "${name}": ${res.join('/')}`;
 });
 
-registerCmd('Get childrens <name> [maxDepth]', ['c'], async (name, maxDepth) => {
+registerCmd('Get childrens', '<name> [maxDepth]', 'c', async (name, maxDepth) => {
   const res = getChildren(name, maxDepth || 0);
   if (!Array.isArray(res)) return res;
   return `Children of "${name}": ${res.join(', ')}`;
 });
 
-registerCmd('Load base tree', ['b'], async function quit () {
+registerCmd('Load base tree', '', 'b', async function quit () {
   for (const a of baseTree) {
     const res = addNode(a[0], a[1]);
     if (res.startsWith('Error')) console.log(res);
