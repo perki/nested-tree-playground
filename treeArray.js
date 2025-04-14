@@ -35,16 +35,13 @@ function _isDescendent (node, potentialParent) {
 async function getChildren (name, maxDepth = 0) {
   if (name == null) throwMessage('name missing');
   const node = await nodeByName(name, 'name');
-
-  const realMaxDepth = maxDepth > 0 || Infinity;
-
-  const baseDepth = node.depth;
-
+  const realMaxDepth = maxDepth > 0 ? maxDepth : Infinity;
+  const baseDepth = node.depth + realMaxDepth;
   return tree.filter(n =>
     n.left > node.left &&
     n.right < node.right &&
-    n.depth <= baseDepth + realMaxDepth
-  ).map((n) => n.name);
+    n.depth <= baseDepth
+  );
 }
 
 /**
@@ -54,7 +51,7 @@ async function getParents (name) {
   const node = await nodeByName(name, 'name');
   return tree.filter(n =>
     n.left < node.left && n.right > node.right
-  ).map((n) => n.name);
+  );
 }
 
 /**
@@ -198,14 +195,13 @@ function change (node, key, value) {
 }
 
 async function moveRandomNode () {
-  if (tree.length === 1) throwMessage('Tree is empty');
+  if (tree.length < 3) throwMessage('Tree is too small');
   let i = 0;
   while (i < 1) {
     const node = tree[Math.floor(Math.random() * tree.length)];
     const dest = tree[Math.floor(Math.random() * tree.length)];
-    if (_isDescendent(dest, node) || (dest === node)) continue; // retry;
+    if (_isDescendent(dest, node) || (dest.name === node.name)) continue; // retry;
     i++;
     await moveNode(node, dest);
-    isValidTree(tree, true);
   }
 }

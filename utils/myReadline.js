@@ -4,7 +4,8 @@ const commands = { };
 
 module.exports = {
   registerCmd,
-  startReadline
+  startReadline,
+  question
 };
 
 // -- readLine
@@ -22,6 +23,14 @@ const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
 });
+
+async function question (text) {
+  return new Promise((resolve, reject) => {
+    rl.question('\n' + text, function (cmd) {
+      resolve(cmd.split(' '));
+    });
+  });
+}
 
 function startReadline () {
   rl.question('\nCommand: ', async function (cmd) {

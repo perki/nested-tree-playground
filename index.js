@@ -1,5 +1,5 @@
-const { registerCmd, startReadline } = require('./utils/myReadline');
-const { showTree } = require('./utils/treeTools');
+const { registerCmd, startReadline, question } = require('./utils/myReadline');
+const { showTree, isValidTree } = require('./utils/treeTools');
 
 const baseTree = [
   ['a'], ['aa', 'a'], ['aaa', 'aa'], ['aaaa', 'aaa'], ['ab', 'a'], ['ac', 'a'],
@@ -7,9 +7,12 @@ const baseTree = [
   ['c'], ['cc', 'c'], ['cb', 'c']
 ];
 
-const tree = require('./treeArray');
-// const tree = require('./treeSQLite');
+let tree = null;
 
+const trees = [
+  {name: 'Array', source: './treeArray'},
+  {name: 'SQLITE', source: './treeSQLite'}
+];
 // --------------- commands --------------- //
 
 registerCmd('Show tree', '', 's', async () => {
@@ -25,7 +28,7 @@ registerCmd('Add a node', '<name> [parent]', '+', async (name, parentName = 'roo
 
 registerCmd('Remove a node', '<name>', '-', async (name) => {
   const res = await tree.removeNode(name);
-  showTree(await tree.getAllNodes());
+  showTree(await tree.getAllNodes(), true);
   return res;
 });
 
@@ -40,13 +43,16 @@ registerCmd('Move a node', '<name> <destination>', 'm', async (name, destination
 registerCmd('Get parents', '<name>', 'p', async (name) => {
   const res = await tree.getParents(name);
   if (!Array.isArray(res)) return res;
-  return `Parents of "${name}": ${res.join('/')}`;
+  const names = res.map((n) => n.name);
+  return `Parents of "${name}": ${names.join('/')}`;
 });
 
 registerCmd('Get childrens', '<name> [maxDepth]', 'c', async (name, maxDepth) => {
-  const res = await tree.getChildren(name, maxDepth || 0);
+  const depth = Number.parseInt(maxDepth);
+  const res = await tree.getChildren(name, depth);
   if (!Array.isArray(res)) return res;
-  return `Children of "${name}": ${res.join(', ')}`;
+  const names = res.map((n) => n.name);
+  return `Children of "${name}": ${names.join(', ')}`;
 });
 
 registerCmd('Load base tree', '', 'b', async function quit () {
@@ -62,12 +68,27 @@ registerCmd('Random moves', '[moves = 100]', 'r', async (nMoves = 100) => {
   for (let i = 0; i < nMoves; i++) {
     try {
       await tree.moveRandomNode();
+      isValidTree(await tree.getAllNodes(), true);
     } catch (e) {
       console.log(`** Stopped after ${i}/${nMoves} random moves`);
       throw e;
     }
   }
+  showTree(await tree.getAllNodes(), true);
   return `Executed ${nMoves} random moves`;
 });
 
-startReadline();
+// start
+(async () => {
+  console.log('Choose an implementation from the list');
+  for (let i = 0; i < trees.length; i++) {
+    console.log(` ${i} -  ${trees[i].name}`);
+  }
+  const res = await question(':');
+  const choice = Number.parseInt(res[0]);
+  tree = require(trees[choice].source);
+
+  startReadline();
+})();
+
+

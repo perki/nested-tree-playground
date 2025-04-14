@@ -10,3 +10,8 @@ Then you have several commands to
 - remove node
 - get children 
 - get parents
+
+### Implementation 
+
+- Arraybased: Simple Array with a set of nodes
+- SQLite: demonstrator with SQLite
