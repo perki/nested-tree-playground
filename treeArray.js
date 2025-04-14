@@ -4,7 +4,7 @@ const { isValidTree, showTree } = require('./utils/treeTools');
 const tree = [{ left: 1, right: 2, depth: 0, name: 'root', parent: null }];
 
 module.exports = {
-  isDescendent,
+  _isDescendent,
   getChildren,
   getParents,
   nodeByName,
@@ -25,16 +25,16 @@ async function getAllNodes () {
 /**
  * Check is a node is a decendent
  */
-function isDescendent (node, potentialParent) {
+function _isDescendent (node, potentialParent) {
   return (node.left > potentialParent.left && node.right < potentialParent.right);
 }
 
 /**
  * Get children
  */
-function getChildren (name, maxDepth = 0) {
+async function getChildren (name, maxDepth = 0) {
   if (name == null) throwMessage('name missing');
-  const node = nodeByName(name, 'name');
+  const node = await nodeByName(name, 'name');
 
   const realMaxDepth = maxDepth > 0 || Infinity;
 
@@ -50,8 +50,8 @@ function getChildren (name, maxDepth = 0) {
 /**
  * Get parents
  */
-function getParents (name) {
-  const node = nodeByName(name, 'name');
+async function getParents (name) {
+  const node = await nodeByName(name, 'name');
   return tree.filter(n =>
     n.left < node.left && n.right > node.right
   ).map((n) => n.name);
@@ -63,7 +63,7 @@ function getParents (name) {
  * @param {string} key - the key to display in case of error.
  * @returns {}
  */
-function nodeByName (name, key) {
+async function nodeByName (name, key) {
   if (name == null) throwMessage(`${key} is missing`);
   const node = tree.find((n) => n.name === name);
   if (node == null) throwMessage(`${key} => node "${name}" does not exists`);
@@ -73,10 +73,10 @@ function nodeByName (name, key) {
 /**
  * Move a node
  */
-function moveNode (node, destination) {
+async function moveNode (node, destination) {
   console.log(`**** Move ${node.name} ${destination.name}`);
   // check if destination is descendent of node
-  if (isDescendent(destination, node)) throwMessage(`"${destination.name}" is a descendant of ${node.name}`);
+  if (_isDescendent(destination, node)) throwMessage(`"${destination.name}" is a descendant of ${node.name}`);
   if (destination === node) throwMessage('Destination is identical to node');
 
   const leftOfMovingNode = node.left;
@@ -143,8 +143,8 @@ function moveNode (node, destination) {
 /**
  * Remove a node
  */
-function removeNode (name) {
-  const found = nodeByName(name, 'name');
+async function removeNode (name) {
+  const found = await nodeByName(name, 'name');
   const node = structuredClone(found);
   const width = node.right - node.left + 1;
 
@@ -172,11 +172,11 @@ function removeNode (name) {
  * @param {string} [parentName] - default "root"
  * @returns {string} message
  */
-function addNode (name, parentName = 'root') {
+async function addNode (name, parentName = 'root') {
   if (name == null) throwMessage('name missing');
   const existing = tree.find((n) => n.name === name);
   if (existing) throwMessage(`node with name "${name}" already exists`);
-  const parent = nodeByName(parentName, 'parent-name');
+  const parent = await nodeByName(parentName, 'parent-name');
 
   const parentCopy = structuredClone(parent);
   // update tree left and right
@@ -197,15 +197,15 @@ function change (node, key, value) {
   node[key] = value;
 }
 
-function moveRandomNode () {
+async function moveRandomNode () {
   if (tree.length === 1) throwMessage('Tree is empty');
   let i = 0;
   while (i < 1) {
     const node = tree[Math.floor(Math.random() * tree.length)];
     const dest = tree[Math.floor(Math.random() * tree.length)];
-    if (isDescendent(dest, node) || (dest === node)) continue; // retry;
+    if (_isDescendent(dest, node) || (dest === node)) continue; // retry;
     i++;
-    moveNode(node, dest);
+    await moveNode(node, dest);
     isValidTree(tree, true);
   }
 }
