@@ -1,4 +1,5 @@
 const { registerCmd, startReadline } = require('./utils/myReadline');
+const { showTree } = require('./utils/treeTools');
 
 const baseTree = [
   ['a'], ['aa', 'a'], ['aaa', 'aa'], ['aaaa', 'aaa'], ['ab', 'a'], ['ac', 'a'],
@@ -7,22 +8,24 @@ const baseTree = [
 ];
 
 const tree = require('./treeArray');
+// const tree = require('./treeSQLite');
 
 // --------------- commands --------------- //
 
 registerCmd('Show tree', '', 's', async () => {
-  tree.showTree();
+  const nodes = await tree.getAllNodes();
+  showTree(nodes);
 });
 
 registerCmd('Add a node', '<name> [parent]', '+', async (name, parentName = 'root') => {
   const res = tree.addNode(name, parentName);
-  tree.showTree(true);
+  showTree(await tree.getAllNodes(), true);
   return res;
 });
 
 registerCmd('Remove a node', '<name>', '-', async (name) => {
   const res = tree.removeNode(name);
-  tree.showTree(true);
+  showTree(await tree.getAllNodes());
   return res;
 });
 
@@ -30,7 +33,7 @@ registerCmd('Move a node', '<name> <destination>', 'm', async (name, destination
   const node = tree.nodeByName(name, 'name');
   const destination = tree.nodeByName(destinationName, 'destination');
   const res = tree.moveNode(node, destination);
-  tree.showTree(true);
+  showTree(await tree.getAllNodes(), true);
   return res;
 });
 
@@ -51,7 +54,7 @@ registerCmd('Load base tree', '', 'b', async function quit () {
     const res = tree.addNode(a[0], a[1]);
     if (res.startsWith('Error')) console.log(res);
   }
-  tree.showTree(true);
+  showTree(await tree.getAllNodes(), true);
   return 'Base tree loaded';
 });
 

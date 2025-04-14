@@ -1,4 +1,5 @@
 const throwMessage = require('./utils/throwMessage');
+const { isValidTree, showTree } = require('./utils/treeTools');
 
 const tree = [{ left: 1, right: 2, depth: 0, name: 'root', parent: null }];
 
@@ -6,14 +7,20 @@ module.exports = {
   isDescendent,
   getChildren,
   getParents,
-  showTree,
   nodeByName,
   removeNode,
   moveNode,
-  isValidTree,
   addNode,
-  moveRandomNode
+  moveRandomNode,
+  getAllNodes
 };
+
+/**
+ * return nodes
+ */
+async function getAllNodes () {
+  return tree;
+}
 
 /**
  * Check is a node is a decendent
@@ -48,21 +55,6 @@ function getParents (name) {
   return tree.filter(n =>
     n.left < node.left && n.right > node.right
   ).map((n) => n.name);
-}
-
-/**
- * Display tree and last changes
- */
-function showTree (checkIsValid) {
-  for (const n of tree) {
-    const spacing = '                      '.substring(0, n.depth * 2);
-    const changes = n.changes ? n.changes.map((c) => `${c[0]} ${c[1]}=>${c[2]}`).join(', ') : '';
-    console.log(spacing + n.name + ' l:' + n.left + ' r:' + n.right, '\tp:' + n.parent + '\t' + changes);
-    n.changes = [];
-  }
-  if (checkIsValid) {
-    console.log(isValidTree());
-  }
 }
 
 /**
@@ -128,7 +120,7 @@ function moveNode (node, destination) {
   }
 
   tree.sort((a, b) => a.left - b.left);
-  showTree();
+  showTree(tree);
 
   // No delta shift as node already moved when down
   const deltaShift = (up < 1) ? -sizeOfMovingNode : 0;
@@ -199,58 +191,6 @@ function addNode (name, parentName = 'root') {
   return 'Added ' + name;
 }
 
-/**
- * Check TREE
- */
-function isValidTree (throwError = false) {
-  const errors = [];
-
-  // 1. Check that left < right for all nodes
-  for (const node of tree) {
-    if (node.left >= node.right) {
-      errors.push(`Node ${node.name} has invalid left/right values: (${node.left}, ${node.right})`);
-    }
-  }
-
-  // 2. Check that left/right values are unique
-  const allBounds = tree.flatMap(node => [node.left, node.right]);
-  const uniqueBounds = new Set(allBounds);
-  if (uniqueBounds.size !== allBounds.length) {
-    errors.push('Left/right values are not unique');
-  }
-
-  // 3. Check containment: each child must be fully nested in its parent
-  const idToNode = Object.fromEntries(tree.map(n => [n.name, n]));
-  for (const node of tree) {
-    if (node.parent !== null) {
-      const parent = idToNode[node.parent];
-      if (!parent) {
-        errors.push(`Parent ${node.parent} not found for node ${node.name}`);
-      } else if (!(node.left > parent.left && node.right < parent.right)) {
-        errors.push(`Node ${node.name} is not properly nested within parent ${parent.name}`);
-      }
-    }
-  }
-
-  // 4. Check that max right equals 2 * number of nodes
-  const maxRight = Math.max(...tree.map(n => n.right));
-  const expectedMax = tree.length * 2;
-  if (maxRight !== expectedMax) {
-    errors.push(`Max right value ${maxRight} does not equal 2 * total nodes (${expectedMax})`);
-  }
-
-  // 5. Check depth are correct
-  for (const node of tree) {
-    const computedDepth = tree.filter(n =>
-      n.left < node.left && n.right > node.right
-    ).length;
-    if (node.depth !== computedDepth) errors.push(`Node ${node.name} should have a depth of ${computedDepth} no ${node.depth}`);
-  }
-
-  if (throwError && errors.length) throwMessage('Tree not valid \n' + errors.join('\n- '));
-  return errors.length ? errors : 'Tree is valid';
-}
-
 function change (node, key, value) {
   if (!node.changes) node.changes = [];
   node.changes.push([key, node[key], value]);
@@ -266,6 +206,6 @@ function moveRandomNode () {
     if (isDescendent(dest, node) || (dest === node)) continue; // retry;
     i++;
     moveNode(node, dest);
-    isValidTree(true);
+    isValidTree(tree, true);
   }
 }
