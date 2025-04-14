@@ -1,5 +1,5 @@
 const throwMessage = require('./utils/throwMessage');
-const { isValidTree, showTree } = require('./utils/treeTools');
+const { showTree } = require('./utils/treeTools');
 
 const tree = [{ left: 1, right: 2, depth: 0, name: 'root', parent: null }];
 

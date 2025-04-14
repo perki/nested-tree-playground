@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const Database = require('better-sqlite3');
 
-const throwMessage = require('./utils/throwMessage');
+const throwMessage = require('../utils/throwMessage');
 
 module.exports = {
   _isDescendent,

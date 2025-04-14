@@ -10,8 +10,8 @@ const baseTree = [
 let tree = null;
 
 const trees = [
-  {name: 'Array', source: './treeArray'},
-  {name: 'SQLITE', source: './treeSQLite'}
+  { name: 'Array', source: './treeArray' },
+  { name: 'SQLITE', source: './treeSQLite' }
 ];
 // --------------- commands --------------- //
 
@@ -90,5 +90,3 @@ registerCmd('Random moves', '[moves = 100]', 'r', async (nMoves = 100) => {
 
   startReadline();
 })();
-
-
