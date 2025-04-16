@@ -2,7 +2,8 @@ const throwMessage = require('./throwMessage');
 
 module.exports = {
   isValidTree,
-  showTree
+  showTree,
+  getTreeObject
 };
 
 function isValidTree (nodes, throwError = false) {
@@ -67,4 +68,23 @@ function showTree (nodes, checkIsValid) {
   if (checkIsValid) {
     console.log(isValidTree(nodes));
   }
+}
+
+/**
+ * Display tree as object
+ */
+function getTreeObject (nodes) {
+  const result = [];
+  let previous = [];
+  for (const n of nodes) {
+    const node = { id: n.name, children: [] };
+    while (previous.length > 0 && previous[previous.length - 1].id !== n.parent) { previous.pop(); }
+    if (previous.length > 0) {
+      previous[previous.length - 1].children.push(node);
+    } else {
+      result.push(node);
+    }
+    previous.push(node);
+  }
+  return result;
 }

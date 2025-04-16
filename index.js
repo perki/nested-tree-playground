@@ -1,5 +1,5 @@
 const { registerCmd, startReadline, question } = require('./utils/myReadline');
-const { showTree, isValidTree } = require('./utils/treeTools');
+const { showTree, isValidTree, getTreeObject } = require('./utils/treeTools');
 
 const baseTree = [
   ['a'], ['aa', 'a'], ['aaa', 'aa'], ['aaaa', 'aaa'], ['ab', 'a'], ['ac', 'a'],
@@ -18,6 +18,13 @@ const trees = [
 registerCmd('Show tree', '', 's', async () => {
   const nodes = await tree.getAllNodes();
   showTree(nodes);
+  return '';
+});
+
+registerCmd('Show Object', '', 'o', async () => {
+  const nodes = await tree.getAllNodes();
+  const treeO = getTreeObject(nodes);
+  return require('util').inspect(treeO, false, 100, true);
 });
 
 registerCmd('Add a node', '<name> [parent]', '+', async (name, parentName = 'root') => {
