@@ -72,7 +72,8 @@ const statementMoveShiftDownRight = db.prepare('UPDATE tree SET right = right - 
 const statementMoveShiftUpLeft = db.prepare('UPDATE tree SET left = left + @sizeOfMovingNode WHERE left < @rightOfMovingNode AND left >= @rightOfDestinationNode');
 const statementMoveShiftUpRight = db.prepare('UPDATE tree SET right = right + @sizeOfMovingNode WHERE right < @rightOfMovingNode AND right >= @rightOfDestinationNode');
 // replace hidden node, set parent and depth
-const statementMoveHidenNodes = db.prepare('UPDATE tree SET left = @shift - left, right = @shift - right, depth = depth + @deltaDepth, parent = @parentName WHERE left < 0');
+const statementMoveHidenNodes = db.prepare('UPDATE tree SET left = @shift - left, right = @shift - right, depth = depth + @deltaDepth WHERE left < 0');
+const statementUpdateParentName = db.prepare('UPDATE tree SET parent = @parentName WHERE name = @name');
 
 const transactionMove = db.transaction((node, destination) => {
   const leftOfMovingNode = node.left;
@@ -80,6 +81,9 @@ const transactionMove = db.transaction((node, destination) => {
   const leftOfDestinationNode = destination.left;
   const rightOfDestinationNode = destination.right;
   const sizeOfMovingNode = rightOfMovingNode - leftOfMovingNode + 1;
+
+  // Update the node first
+  statementUpdateParentName.run({ name: node.name, parentName: destination.name });
 
   // Upper in the chain & not a child
   const up = (leftOfDestinationNode < leftOfMovingNode && rightOfMovingNode > rightOfDestinationNode) ? 1 : -1;
@@ -96,7 +100,7 @@ const transactionMove = db.transaction((node, destination) => {
   const deltaDepth = destination.depth - node.depth + 1;
   const shift = rightOfDestinationNode - leftOfMovingNode + deltaShift;
 
-  statementMoveHidenNodes.run({ shift, deltaDepth, parentName: destination.name });
+  statementMoveHidenNodes.run({ shift, deltaDepth });
 });
 // ------------------------------------//
 
@@ -109,14 +113,22 @@ async function getAllNodes () {
   return nodes;
 }
 
-async function getQuery (parentName, excluded) {
+async function getQuery (parentName, excluded, depth = Infinity, onlyOne = false) {
   const wheres = [`parent.name = '${parentName}'`];
+
+  if (depth !== Infinity) {
+    wheres.push(`node.depth <= parent.depth + ${depth}`);
+  }
+
   if (excluded && excluded.length > 0) {
     const excludedString = excluded.map(e => `'${e}'`).join(', ');
     wheres.push(`NOT EXISTS (SELECT 1 FROM tree AS excluded WHERE excluded.name IN (${excludedString}) AND node.left >= excluded.left AND node.right <= excluded.right)`);
   }
+
+  const oneOrChildsStmnt = onlyOne ? 'ON node.left >= parent.left AND node.right <= parent.right' : 'ON node.left > parent.left AND node.right < parent.right';
+
   const stmt = 'SELECT node.* FROM tree AS parent JOIN tree AS node ' +
-    'ON node.left > parent.left AND node.right < parent.right WHERE ' + wheres.join(' AND ') + ' ORDER BY left';
+    oneOrChildsStmnt + ' WHERE ' + wheres.join(' AND ') + ' ORDER BY left';
   const statementGetQuery = db.prepare(stmt);
   const nodes = statementGetQuery.all();
   console.log(nodes);

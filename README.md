@@ -10,6 +10,8 @@ Then you have several commands to
 - remove node
 - get children 
 - get parents
+- move node
+- query with exclusion (SQLite only)
 
 ### Implementation 
 

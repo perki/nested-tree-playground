@@ -99,5 +99,6 @@ registerCmd('Random moves', '[moves = 100]', 'r', async (nMoves = 100) => {
   if (Number.isNaN(choice) || choice >= trees.length) choice = 1;
   tree = require(trees[choice].source);
   console.log(`>> using ${trees[choice].name} <<`);
+  console.log('>> Type "b" to load a basic tree, [Enter] for the list of commands');
   startReadline();
 })();

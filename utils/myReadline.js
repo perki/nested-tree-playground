@@ -33,13 +33,13 @@ async function question (text) {
 }
 
 function startReadline () {
-  rl.question('\nCommand: ', async function (cmd) {
+  rl.question('\nCommands list: ', async function (cmd) {
     const cmds = cmd.split(' ');
     const key = cmds[0];
     const args = cmds.slice(1);
     const command = commands[key];
     if (command == null) {
-      console.log('*** No existing command: "' + key + '"');
+      if (key !== '') console.log('*** No existing command: "' + key + '"');
       showUsage();
     } else {
       try {
