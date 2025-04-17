@@ -25,6 +25,7 @@ registerCmd('Show Object [parent] [...excluded Ids]', '', 'o', async function (.
   console.log(args);
   const parent = args[0];
   const excluded = args.slice(1);
+  // treeQuery exposes more params
   const nodes = parent ? await tree.getQuery(parent, excluded) : await tree.getAllNodes();
   const treeO = getTreeObject(nodes);
   return require('util').inspect(treeO, false, 100, true);

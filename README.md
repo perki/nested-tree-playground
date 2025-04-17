@@ -1,6 +1,6 @@
 # Nested tree playground
 
-Simple playground for nested tree algorythm from command line. 
+Simple playground for testing nested tree logics from command line. 
 
 `node index.js` 
 
