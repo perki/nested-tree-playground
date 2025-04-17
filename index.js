@@ -21,8 +21,11 @@ registerCmd('Show tree', '', 's', async () => {
   return '';
 });
 
-registerCmd('Show Object', '', 'o', async () => {
-  const nodes = await tree.getAllNodes();
+registerCmd('Show Object [parent] [...excluded Ids]', '', 'o', async function (...args) {
+  console.log(args);
+  const parent = args[0];
+  const excluded = args.slice(1);
+  const nodes = parent ? await tree.getQuery(parent, excluded) : await tree.getAllNodes();
   const treeO = getTreeObject(nodes);
   return require('util').inspect(treeO, false, 100, true);
 });
@@ -91,9 +94,10 @@ registerCmd('Random moves', '[moves = 100]', 'r', async (nMoves = 100) => {
   for (let i = 0; i < trees.length; i++) {
     console.log(` ${i} -  ${trees[i].name}`);
   }
-  const res = await question(':');
-  const choice = Number.parseInt(res[0]);
+  const res = await question('(default 1):');
+  let choice = Number.parseInt(res[0]);
+  if (Number.isNaN(choice) || choice >= trees.length) choice = 1;
   tree = require(trees[choice].source);
-
+  console.log(`>> using ${trees[choice].name} <<`);
   startReadline();
 })();

@@ -6,6 +6,7 @@ const throwMessage = require('../utils/throwMessage');
 
 module.exports = {
   _isDescendent,
+  getQuery,
   getChildren,
   getParents,
   nodeByName,
@@ -103,10 +104,23 @@ const transactionMove = db.transaction((node, destination) => {
 db.prepare('DELETE FROM tree').run();
 statementInsertNode.run({ name: 'root', parent: null, depth: 0, left: 0, right: 2 });
 
-addNode('toto', 'root');
-
 async function getAllNodes () {
   const nodes = statementGetNodes.all();
+  return nodes;
+}
+
+async function getQuery (parentName, excluded) {
+  const wheres = [`parent.name = '${parentName}'`];
+  if (excluded && excluded.length > 0) {
+    const excludedString = excluded.map(e => `'${e}'`).join(', ');
+    wheres.push(`NOT EXISTS (SELECT 1 FROM tree AS excluded WHERE excluded.name IN (${excludedString}) AND node.left >= excluded.left AND node.right <= excluded.right)`);
+  }
+  const stmt = 'SELECT node.* FROM tree AS parent JOIN tree AS node ' +
+    'ON node.left > parent.left AND node.right < parent.right WHERE ' + wheres.join(' AND ') + ' ORDER BY left';
+  const statementGetQuery = db.prepare(stmt);
+  const nodes = statementGetQuery.all();
+  console.log(nodes);
+  console.log(stmt);
   return nodes;
 }
 

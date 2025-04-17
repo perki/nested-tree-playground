@@ -75,7 +75,7 @@ function showTree (nodes, checkIsValid) {
  */
 function getTreeObject (nodes) {
   const result = [];
-  let previous = [];
+  const previous = [];
   for (const n of nodes) {
     const node = { id: n.name, children: [] };
     while (previous.length > 0 && previous[previous.length - 1].id !== n.parent) { previous.pop(); }

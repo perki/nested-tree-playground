@@ -12,7 +12,8 @@ module.exports = {
   moveNode,
   addNode,
   moveRandomNode,
-  getAllNodes
+  getAllNodes,
+  getQuery
 };
 
 /**
@@ -20,6 +21,10 @@ module.exports = {
  */
 async function getAllNodes () {
   return tree;
+}
+
+async function getQuery (parent, excluded) {
+  return 'Not implemented in treeArray';
 }
 
 /**
