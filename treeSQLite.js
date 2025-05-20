@@ -14,7 +14,8 @@ module.exports = {
   moveNode,
   addNode,
   moveRandomNode,
-  getAllNodes
+  getAllNodes,
+  getDeleted
 };
 
 const DB_OPTIONS = {};
@@ -24,6 +25,11 @@ fs.mkdirSync(STORAGE_PATH, { recursive: true });
 
 const db = new Database(path.resolve(STORAGE_PATH, 'db.sqlite'), DB_OPTIONS);
 db.pragma('journal_mode = WAL');
+
+// create deletion record table
+db.prepare('CREATE TABLE IF NOT EXISTS deletedNode (name TEXT PRIMARY KEY, deleted INTEGER);').run();
+
+const statementGetDeleted = db.prepare('SELECT * from deletedNode');
 
 // create table
 db.prepare('CREATE TABLE IF NOT EXISTS tree (name TEXT PRIMARY KEY, parent TEXT, depth INTEGER NOT NULL, left INTEGER NOT NULL, right INTEGER NOT NULL, FOREIGN KEY (parent) REFERENCES tree(name));').run();
@@ -49,11 +55,14 @@ const transactionAddRow = db.transaction((name, parent) => {
 });
 
 // statements and transaction remove node
+const statementKeepDeletedRecord = db.prepare('INSERT INTO deletedNode(name, deleted) SELECT name, @deleted FROM tree WHERE left >= @left AND right <= @right ON CONFLICT(name) DO UPDATE SET deleted=@deleted');
 const statementDeleteNodeAndChilds = db.prepare('DELETE FROM tree WHERE left >= @left AND right <= @right');
 const statementDecreaseLeftOfNodesBefore = db.prepare('UPDATE tree SET left = left - @width WHERE left > @nodeRight');
 const statementDecreaseRightOfNodesBefore = db.prepare('UPDATE tree SET right = right - @width WHERE right > @nodeRight');
 const transactionDeleteNodeAndChilds = db.transaction((node) => {
   const width = node.right - node.left + 1;
+  const deleted = Date.now() / 1000;
+  statementKeepDeletedRecord.run({ left: node.left, right: node.right, deleted});
   statementDeleteNodeAndChilds.run({ left: node.left, right: node.right });
   statementDecreaseRightOfNodesBefore.run({ width, nodeRight: node.right });
   statementDecreaseLeftOfNodesBefore.run({ width, nodeRight: node.right });
@@ -110,6 +119,11 @@ statementInsertNode.run({ name: 'root', parent: null, depth: 0, left: 0, right: 
 
 async function getAllNodes () {
   const nodes = statementGetNodes.all();
+  return nodes;
+}
+
+async function getDeleted () {
+  const nodes = statementGetDeleted.all();
   return nodes;
 }
 

@@ -13,7 +13,8 @@ module.exports = {
   addNode,
   moveRandomNode,
   getAllNodes,
-  getQuery
+  getQuery,
+  getDeleted
 };
 
 /**
@@ -21,6 +22,14 @@ module.exports = {
  */
 async function getAllNodes () {
   return tree;
+}
+
+/**
+ * return nodes
+ */
+async function getDeleted () {
+  // not implemented
+  return [];
 }
 
 async function getQuery (parent, excluded) {

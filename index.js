@@ -40,6 +40,7 @@ registerCmd('Add a node', '<name> [parent]', '+', async (name, parentName = 'roo
 registerCmd('Remove a node', '<name>', '-', async (name) => {
   const res = await tree.removeNode(name);
   showTree(await tree.getAllNodes(), true);
+  console.log(await tree.getDeleted());
   return res;
 });
 
